@@ -16,9 +16,9 @@ void wrapper_1(float x, int i, int j, float T, float r, float sigma, float K, fl
 
     //Parameters for numerical parameter
     unsigned int M=100; //Number of time steps
-    float dt=sqrtf(T/M); //IMPORTANT: It is the square root of the simulation's step size.
+    float dt=sqrtf(T/(M+1)); //IMPORTANT: It is the square root of the simulation's step size.
 
-    printf("The interval [0, %.1f] is divided into %i sub-intervals, with steps of size %.2f \n", T, M+1, dt*dt);
+    printf("The interval [0, %.1f] is divided into %i sub-intervals, with steps of size %.3f \n", T, M+1, dt*dt);
 
     assert (x>=0);
     assert (j<=i);
@@ -71,7 +71,7 @@ void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, fl
     unsigned int M=100; //Number of time steps
     float dt=sqrtf(T/(M+1)); //IMPORTANT: It is the square root of the simulation's step size.
 
-    printf("The interval [0, %.1f] is divided into %i sub-intervals, with steps of size %.2f \n", T, M+1, dt*dt);
+    printf("The interval [0, %.1f] is divided into %i sub-intervals, with steps of size %.3f \n", T, M+1, dt*dt);
 
     assert (x>=0);
     assert (j<=i);
@@ -115,7 +115,8 @@ void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, fl
     free(PayCPU);
 }
 
-void wrapper_3(float T, float r, float sigma, float S0, float K, float B, float P1, float P2)
+
+void wrapper_trash(float T, float r, float sigma, float S0, float K, float B, float P1, float P2)
 {
 
   //Parameters for numerical parameter
@@ -129,7 +130,7 @@ void wrapper_3(float T, float r, float sigma, float S0, float K, float B, float 
 
   float dt=sqrtf(T/(M+1)); //IMPORTANT: It is the square root of the simulation's step size.
 
-  printf("The interval [0, %.1f] is divided into %i sub-intervals, with steps of size %.2f \n", T, M+1, dt*dt);
+  printf("The interval [0, %.1f] is divided into %i sub-intervals, with steps of size %.3f \n", T, M+1, dt*dt);
 
   float TimeExec;
   cudaEvent_t start, stop;						// GPU timer instructions
@@ -149,7 +150,7 @@ void wrapper_3(float T, float r, float sigma, float S0, float K, float B, float 
   /*Initiate seeds for MC simulations*/
   curandState* states;
   testCUDA(cudaMalloc(&states, 512 * M * NTPB * sizeof(curandState)));
-  init_curand_state_k <<<Nb_blocks, NTPB>>> (states);
+  init_curand_state_k_2D <<<Nb_blocks, NTPB>>> (states);
 
   MC_k4<<<Nb_blocks, NTPB, NTPB*sizeof(float)>>>(r, sigma, dt, S0, K, B, P1, P2,
 	M, Nb_sim, states, PayGPU);
@@ -163,7 +164,12 @@ void wrapper_3(float T, float r, float sigma, float S0, float K, float B, float 
   testCUDA(cudaEventDestroy(stop));				// GPU timer instructions
 
   printf("GPU time execution for MC_k4 is: %f ms\n", TimeExec);
+  
+  /*Write data in a text file.*/
+  char filename[]="option_price.txt";
+  write_data(filename, PayCPU, 512 * M * NTPB);
 
+  /*Free memory*/
   testCUDA(cudaFree(PayGPU));
   free(PayCPU);
 } 

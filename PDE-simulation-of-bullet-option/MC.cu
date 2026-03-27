@@ -120,10 +120,9 @@ __global__ void MC_k3(float x, float r, float sigma, float dt, float K, float B,
   }
 
   state[idx]=localState;
-
 }
 
-__global__ void MC_k4(float r, float sigma, float dt, float S0, float K, float B, float P1, float P2,
+__global__ void MC_k_trash(float r, float sigma, float dt, float S0, float K, float B, float P1, float P2,
 	int M, int Nb_sim, curandState* state, Option_price* PayGPU)
 {
   int idx = blockIdx.x * blockDim.x * gridDim.y +
@@ -161,7 +160,6 @@ __global__ void MC_k4(float r, float sigma, float dt, float S0, float K, float B
       S *= expf((r - sigma*sigma/2) * dt * dt + sigma * dt * G.x);
       j+=(S<=B);
     }
-    printf("initial and final asset price: %f, %f\n", S_Ti, S);
     F += expf(-r * (M-blockIdx.x) * dt * dt) * fmaxf(0.0f, S - K) * (((float)j>=P1) && ((float)j<=P2));
   }
   /*No reduction is required since threads run monte-carlo simulation independantly of each others.*/
