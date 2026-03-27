@@ -61,6 +61,7 @@ void wrapper_1(float x, int i, int j, float T, float r, float sigma, float K, fl
     //Parameters for numerical parameter
     unsigned int M=100; //Number of time steps
     float dt=sqrtf(T/M); //IMPORTANT: It is the square root of the simulation's step size.
+    float t_i = i * dt * dt;
 
     printf("The interval [0, %.1f] is divided into %i sub-intervals, with steps of size %.2f \n", T, M, dt*dt);
 
@@ -68,6 +69,7 @@ void wrapper_1(float x, int i, int j, float T, float r, float sigma, float K, fl
     assert (j<=i);
 
     float TimeExec;
+    float mc_value;
   	cudaEvent_t start, stop;						// GPU timer instructions
 	  testCUDA(cudaEventCreate(&start));				// GPU timer instructions
 	  testCUDA(cudaEventCreate(&stop));				// GPU timer instructions
@@ -95,10 +97,13 @@ void wrapper_1(float x, int i, int j, float T, float r, float sigma, float K, fl
 	  testCUDA(cudaEventDestroy(start));				// GPU timer instructions
 	  testCUDA(cudaEventDestroy(stop));				// GPU timer instructions
 
-	  printf("GPU time execution for MC_k1 is: %f ms\n", TimeExec);
+    mc_value = sum_array(PayCPU, Nb_sim);
 
-    printf("F(%i, %i, %i)=%f\n", i, (int)x, j, sum_array(PayCPU, Nb_sim));
+	  printf("GPU time execution for Monte Carlo: %f ms\n", TimeExec);
+    printf("MC result for T_%d = %.6f, j=%d, S=%.2f: F = %f\n", i, t_i, j, x, mc_value);
+
     testCUDA(cudaFree(PayGPU));
+    testCUDA(cudaFree(states));
     free(PayCPU);
 }
 
@@ -217,6 +222,7 @@ void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, fl
     //Parameters for numerical parameter
     unsigned int M=100; //Number of time steps
     float dt=sqrtf(T/M); //IMPORTANT: It is the square root of the simulation's step size.
+    float t_i = i * dt * dt;
 
     printf("The interval [0, %.1f] is divided into %i sub-intervals, with steps of size %.2f \n", T, M, dt*dt);
 
@@ -224,6 +230,7 @@ void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, fl
     assert (j<=i);
 
     float TimeExec;
+    float mc_value;
   	cudaEvent_t start, stop;						// GPU timer instructions
 	  testCUDA(cudaEventCreate(&start));				// GPU timer instructions
 	  testCUDA(cudaEventCreate(&stop));				// GPU timer instructions
@@ -252,10 +259,13 @@ void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, fl
 	  testCUDA(cudaEventDestroy(start));				// GPU timer instructions
 	  testCUDA(cudaEventDestroy(stop));				// GPU timer instructions
 
-	  printf("GPU time execution for MC_k2 is: %f ms\n", TimeExec);
+    mc_value = *PayCPU / Nb_sim;
 
-    printf("F(%i, %i, %i)=%f\n", i, (int)x, j, *PayCPU/Nb_sim);
+	  printf("GPU time execution for Monte Carlo: %f ms\n", TimeExec);
+    printf("MC result for T_%d = %.6f, j=%d, S=%.2f: F = %f\n", i, t_i, j, x, mc_value);
+
     testCUDA(cudaFree(PayGPU));
+    testCUDA(cudaFree(states));
     free(PayCPU);
 }
 
@@ -272,19 +282,23 @@ int main(int argc, char* argv[])
     float P2=40; //Upper bound of the interval
     
     float mode=atof(argv[1]);
+    float x = 100.0f;
+    int j = 20;
+    int i = 99;
+
+    if (argc >= 5)
+    {
+      x = atof(argv[2]);
+      j = atoi(argv[3]);
+      i = atoi(argv[4]);
+    }
 
     if (mode==1)
     {
-      float x=atof(argv[2]);
-      int j=atoi(argv[3]);
-      int i=atoi(argv[4]);
       wrapper_1(x, i, j, T, r, sigma, K, B, P1, P2);
     }
     else if (mode==2)
     {
-      float x=atof(argv[2]);
-      int j=atoi(argv[3]);
-      int i=atoi(argv[4]);
       wrapper_2(x, i, j, T, r, sigma, K, B, P1, P2);
     }
 }
