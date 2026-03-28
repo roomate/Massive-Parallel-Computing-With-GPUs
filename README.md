@@ -5,12 +5,12 @@ This repository stores all the labs completed of the course [Massive Parallel Co
 ## Labs
 
 - Lab1: *Device Query*. This lab teaches how to query the device to get the piece of information you need on your GPU.
-- Lab2: *Hello World!* This lab is your first step in the world of cuda programming. Say your very first words from your device's processor.
+- Lab2: *Hello World!* This lab is your first step in the world of CUDA programming. Say your very first words through your device's processor.
 - Lab3: *Add Array*. Add two arrays on you device, and clock the execution time with the CPU and GPU timer. *The Need for Speed!*
-- Lab4: *Monte-Carlo*. Use your favourite Pseudo-Random Number Generator (PRNG) and compute expectations at light speed. Ideal to beat the financial markets.
-    * Compute arithmetic mean directly on the host. It does not exploit the GPU's full power.
-    * Compute arithmetic mean on-device. A code implementing Dyadic thread reduction using shared memory on the kernel is proposed.
-- Lab5: *Partial Differential Equation*. Solve the backward Fokker–Planck equation using three different approaches with a finite-difference schemes. To a greater or lesser extent, each approach exploits the capabilities of the device in a different way.
+- Lab4: *Monte-Carlo*. Use your favourite Pseudo-Random Number Generator (PRNG) and compute expectations at light speed. Ideal to beat the financial markets. You can compute the arithmetic mean either:
+    * on the host. It does not exploit the GPU's full power.
+    * on-device. A code implementing Dyadic thread reduction using shared memory on the kernel is proposed.
+- Lab5: *Partial Differential Equation*. Solve the backward Fokker–Planck equation using three different approaches with a finite-difference schemes. To a greater or lesser extent, each approach leverages the capabilities of the device in a different way.
     * Explicit Euler scheme.
     * Implicit Euler scheme.
     * Crank-Nicolson scheme, aka semi-implicit semi-explicit.
@@ -53,6 +53,6 @@ This repository stores all the labs completed of the course [Massive Parallel Co
 
 
 
-### Acknowledgement
+## Acknowledgement
 
 The project was carried out with Elio Moreau.
