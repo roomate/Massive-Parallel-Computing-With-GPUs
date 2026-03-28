@@ -34,7 +34,7 @@ void wrapper_1(float x, int i, int j, float T, float r, float sigma, float K, fl
     PayCPU=(float*)malloc(Nb_sim*sizeof(float));
     if (PayCPU==nullptr) {printf("Error, unable to allocate memory."); exit(EXIT_FAILURE);}
     /*To store the price computed on unified memory.*/
-	testCUDA(cudaMalloc(&PayGPU, Nb_sim * sizeof(float)));
+	  testCUDA(cudaMalloc(&PayGPU, Nb_sim * sizeof(float)));
 
     /*Initiate seeds for MC simulations*/
     curandState* states;
@@ -54,7 +54,7 @@ void wrapper_1(float x, int i, int j, float T, float r, float sigma, float K, fl
 
 	  printf("GPU time execution for MC_k1 is: %f ms\n", TimeExec);
 
-    printf("F(%i, %i, %i)=%f\n", i, (int)x, j, sum_array(PayCPU, Nb_sim));
+    printf("F(%i, %i, %i)=%f\n", i, (int)x, j, mean(PayCPU, Nb_sim));
     testCUDA(cudaFree(PayGPU));
     testCUDA(cudaFree(states));
     free(PayCPU);
@@ -166,7 +166,7 @@ void wrapper_3(char filename[], float T, float r, float sigma, float S0, float K
   init_curand_state_k <<<gridDim_z, NTPB>>> (states_MC, 2);
 
   MC_k4<<<Nb_blocks, NTPB, NTPB*sizeof(float)>>>(r, sigma, dt, S0, K, B, P1, P2,
-	M, Nb_sim, states, states_MC, PayGPU);
+	M, Sample_size, states, states_MC, PayGPU);
 
   /*Copy memory back into host*/
   testCUDA(cudaMemcpy(PayCPU, PayGPU, Nb_sim * sizeof(Option_price), cudaMemcpyDeviceToHost));

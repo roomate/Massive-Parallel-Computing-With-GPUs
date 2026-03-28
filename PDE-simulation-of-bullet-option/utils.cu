@@ -3,7 +3,7 @@
 #include <curand_kernel.h>
 #include <assert.h>
 
-float sum_array(float* array, int length)
+float mean(float* array, int length)
 {
     float sum=0;
     for (int i=0; i<length; ++i) {sum+=array[i];}
@@ -82,7 +82,7 @@ void read_data(char filename[])
   int j;
   while (fscanf(file, "%f %f %i %f", &Ti, &S_Ti, &j, &F) != EOF)
   {
-    printf("Ti = %f, S_Ti = %f, j = %i, F(Ti, S_Ti, j) = %f\n", Ti, S_Ti, j, F);
+    printf("Ti=%f, S_Ti=%f, j=%i, F(Ti, S_Ti, j)=%f\n", Ti, S_Ti, j, F);
   }
   fclose(file);
 }

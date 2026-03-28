@@ -11,7 +11,7 @@ typedef struct {
 } Option_price;
 
 
-float sum_array(float* array, int length);
+float mean(float* array, int length);
 
 void testCUDA(cudaError_t error, const char *file, int line);
 

@@ -20,6 +20,7 @@ int main(int argc, char* argv[])
 
     if (mode==1)
     {
+      printf("The command line must be used to pass S_Ti, j and Ti in this order.\n");
       float x=atof(argv[2]);
       int j=atoi(argv[3]);
       int i=atoi(argv[4]);
@@ -27,6 +28,7 @@ int main(int argc, char* argv[])
     }
     else if (mode==2)
     {
+      printf("The command line must be used to pass S_Ti, j and Ti in this order.\n");
       float x=atof(argv[2]);
       int j=atoi(argv[3]);
       int i=atoi(argv[4]);
@@ -34,7 +36,7 @@ int main(int argc, char* argv[])
     }
     else if (mode==3)
     {
-      printf("A filename must be specified passed by the CL.\n");
+      printf("The command line must be used to pass a filename.\n");
       char* filename=argv[2];
       wrapper_3(filename, T, r, sigma, S0, K, B, P1, P2);
       read_data(filename);

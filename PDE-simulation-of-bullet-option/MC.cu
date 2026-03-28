@@ -124,9 +124,9 @@ __global__ void MC_k3(float x, float r, float sigma, float dt, float K, float B,
 }
 
 __global__ void MC_k4(float r, float sigma, float dt, float S0, float K, float B, float P1, float P2,
-	int M, int Nb_sim, curandState* state, curandState* states_MC, Option_price* PayGPU)
+	int M, int Sample_size, curandState* state, curandState* states_MC, Option_price* PayGPU)
 {
-  int idx_init_state = blockIdx.x * gridDim.y + blockIdx.y;
+  int idx_init_state = blockIdx.y * gridDim.x + blockIdx.x;
 
   /*Each block has its own copy of tmp.*/
   extern __shared__ float tmp[];
@@ -165,7 +165,7 @@ __global__ void MC_k4(float r, float sigma, float dt, float S0, float K, float B
   /*Block-level synchronization barrier.*/
    __syncthreads();
 
-  int counter = blockDim.z / 2; /*It is basically a decreasing counter.*/
+  int counter = blockDim.x / 2; /*It is basically a decreasing counter.*/
   /*Apply dyadic thread reduction between threads in the same block.*/
   while (counter != 0) {
     if (threadIdx.x < counter) { //There's no divergence here because no else condition
@@ -181,7 +181,7 @@ __global__ void MC_k4(float r, float sigma, float dt, float S0, float K, float B
     PayGPU[idx_init_state].x=S_Ti;
     PayGPU[idx_init_state].j=j_Ti;
 
-    atomicAdd(&(PayGPU[idx_init_state].F), tmp[0]/Nb_sim);
+    atomicAdd(&(PayGPU[idx_init_state].F), tmp[0]/Sample_size);
   }
 }
 
