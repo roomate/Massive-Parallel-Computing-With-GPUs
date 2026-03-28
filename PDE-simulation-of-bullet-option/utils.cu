@@ -10,7 +10,7 @@ float mean(float* array, int length)
     return sum/length;
 }
 
-// Function that catches errors 
+
 void testCUDA(cudaError_t error, const char *file, int line)  {
 
 	if (error != cudaSuccess) {
@@ -19,7 +19,6 @@ void testCUDA(cudaError_t error, const char *file, int line)  {
 	}
 }
 
-// Initiate the PRNG state for each thread
 __global__ void init_curand_state_k(curandState* state, int axis)
 {
   assert (axis>=0 && axis<3);
@@ -34,7 +33,6 @@ __global__ void init_curand_state_k(curandState* state, int axis)
 	curand_init(0, idx, 0, &state[idx]);
 }
 
-// Initiate the PRNG state for each thread
 __global__ void init_curand_state_k_2D(curandState* state)
 {
 	int idx = blockIdx.x * blockDim.x * gridDim.y +
@@ -43,7 +41,6 @@ __global__ void init_curand_state_k_2D(curandState* state)
 	curand_init(0, idx, 0, &state[idx]);
 }
 
-// Initiate the PRNG state for each thread
 __global__ void init_curand_state_k_init(curandState* state)
 {
 	int idx = blockIdx.x * blockDim.x * gridDim.y +
@@ -52,8 +49,6 @@ __global__ void init_curand_state_k_init(curandState* state)
 	curand_init(0, idx, 0, &state[idx]);
 }
 
-
-/*Save all data computed in a file. Columns are in this order: Ti, S_Ti, j, F*/
 void write_data(char filename[], Option_price* data, int length)
 {
   FILE* file=fopen(filename, "w");
@@ -71,7 +66,6 @@ void write_data(char filename[], Option_price* data, int length)
   fclose(file);
 }
 
-/*Read data from filename and print it in standard output.*/
 void read_data(char filename[])
 {
   FILE* file=fopen(filename, "r");

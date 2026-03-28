@@ -132,6 +132,7 @@ int main(void) {
 	printf("Execution time %f ms\n", Tim);
 
   cudaFree(PayGPU);
+  cudaFree(state);
 
 	return 0;
 }

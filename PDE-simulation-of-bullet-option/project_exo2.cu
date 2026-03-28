@@ -139,7 +139,7 @@ __global__ void PDE_diff_kernel (float dt, float dx, float pmin,
 
 
 
-// Wrapper 
+// Wrapper
 void PDE_diff (float dt, float dx, float pmin, float r, int N, int P1, int P2, float K, MyTab* CPUTab){
 
 	float TimeExec;									// GPU timer instructions
