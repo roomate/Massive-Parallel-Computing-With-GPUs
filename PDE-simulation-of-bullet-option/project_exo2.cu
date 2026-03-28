@@ -3,7 +3,7 @@
 
 #define EPS 0.0000001f
 #define NTPB 256
-#define NB 41  // for j=0 to 40
+#define NB 64  // for j=0 to 40
 
 typedef float MyTab[NB][NTPB];
 
@@ -175,14 +175,7 @@ int main(int argc, char* argv[]){
 	float T = 1.0f;
 	float r = 0.1f;
 	int M = 100;
-	int N = 100; // Default number of Crank-Nicolson substeps on [T_{M-1}, T)
-	if (argc >= 2) {
-		N = atoi(argv[1]);
-		if (N <= 0) {
-			printf("The number of Crank-Nicolson substeps must be positive.\n");
-			return EXIT_FAILURE;
-		}
-	}
+	int N = atoi(argv[1]);
 	float interval_dt = T / M;
 	float dt = interval_dt / N;
 	float t_m_minus_1 = T - interval_dt;
@@ -207,8 +200,8 @@ int main(int argc, char* argv[]){
 	PDE_diff(dt, dx, pmin, r, N, P1, P2, K, pt_CPU);
 
 	// Report F(T_{M-1}, x, j) near the ATM point for comparison with Monte Carlo.
-	int j_mc = 20;
-	float s_target = 100.0f;
+	int j_mc = atoi(argv[2]);
+	float s_target = atof(argv[3]);
 	int x_idx = (int)lroundf((logf(s_target) - xmin) / dx);
 	if (x_idx < 0) x_idx = 0;
 	if (x_idx >= NTPB) x_idx = NTPB - 1;
