@@ -6,7 +6,7 @@ OBJECTS = $(SOURCES:.cu=.o)
 TARGET = MC
 
 # Règle par défaut: Si une des dépendances a changé, la target correspondante sera exécuté.
-all: $(TARGET)
+all: $(TARGET) clean
 
 $(TARGET): $(OBJECTS)
 	$(CC) -o $@ $^
@@ -24,6 +24,7 @@ clean:
 
 # Nettoyage complet (fichiers objets et exécutable)
 fclean: clean
+	@echo "Hello There"
 	rm -f $(TARGET)
 
 # Refaire la compilation

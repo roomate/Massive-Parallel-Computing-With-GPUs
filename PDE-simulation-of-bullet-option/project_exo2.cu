@@ -13,7 +13,7 @@ void testCUDA(cudaError_t error, const char *file, int line)  {
 	if (error != cudaSuccess) {
 	   printf("There is an error in file %s at line %d\n", file, line);
        exit(EXIT_FAILURE);
-	} 
+	}
 }
 
 // Has to be defined in the compilation in order to get the correct value 
@@ -135,8 +135,6 @@ __global__ void PDE_diff_kernel (float dt, float dx, float pmin,
 	}
 	
 	pt_GPU[0][j][m] = sy[m + NTPB*(N % 2)];
-	
-
 }
 
 
@@ -202,7 +200,7 @@ int main(int argc, char* argv[]){
 	   int j_val = i;
 	   for(int j=0; j<NTPB; j++){
 	      float S = exp(xmin + dx * j);
-	      pt_CPU[0][i][j] = (j_val >= P1 && j_val <= P2) ? fmaxf(S - K, 0.0f) : 0.0f;	
+	      pt_CPU[0][i][j] = (j_val >= P1 && j_val <= P2) * fmaxf(S - K, 0.0f);
 	   }	
 	}
 

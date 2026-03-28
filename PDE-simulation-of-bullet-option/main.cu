@@ -39,7 +39,6 @@ int main(int argc, char* argv[])
       printf("The command line must be used to pass a filename.\n");
       char* filename=argv[2];
       wrapper_3(filename, T, r, sigma, S0, K, B, P1, P2);
-      read_data(filename);
     }
     else if (mode==4)
     {

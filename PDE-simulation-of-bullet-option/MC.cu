@@ -158,7 +158,7 @@ __global__ void MC_k4(float r, float sigma, float dt, float S0, float K, float B
       j+=(S<=B)*(i > blockIdx.x);
   }
 
-  tmp[threadIdx.x] = expf(-r * (M-blockIdx.x) * dt * dt) * fmaxf(0.0f, S - K); // (((float)j>=P1) && ((float)j<=P2));
+  tmp[threadIdx.x] = expf(-r * (M-blockIdx.x) * dt * dt) * fmaxf(0.0f, S - K) * (((float)j>=P1) && ((float)j<=P2));
   
   /*Dyadic thread reduction of blocks with the same (x,y) coordinates.*/
 
