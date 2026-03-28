@@ -15,10 +15,14 @@ float sum_array(float* array, int length);
 
 void testCUDA(cudaError_t error, const char *file, int line);
 
-__global__ void init_curand_state_k(curandState* state);
+__global__ void init_curand_state_k(curandState* state, int axis);
 
 __global__ void init_curand_state_k_2D(curandState* state);
 
+__global__ void init_curand_state_k_init(curandState* state);
+
 void write_data(char filename[], Option_price* data, int length);
+
+void read_data(char filename[]);
 
 #endif

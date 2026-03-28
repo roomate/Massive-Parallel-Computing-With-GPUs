@@ -34,6 +34,14 @@ int main(int argc, char* argv[])
     }
     else if (mode==3)
     {
-      wrapper_3(T, r, sigma, S0, K, B, P1, P2);
+      printf("A filename must be specified passed by the CL.\n");
+      char* filename=argv[2];
+      wrapper_3(filename, T, r, sigma, S0, K, B, P1, P2);
+      read_data(filename);
+    }
+    else if (mode==4)
+    {
+      printf("It is going to take a lot of time!\n");
+      wrapper_trash(T, r, sigma, S0, K, B, P1, P2);
     }
 }

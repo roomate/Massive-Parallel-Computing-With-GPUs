@@ -39,7 +39,7 @@ void wrapper_1(float x, int i, int j, float T, float r, float sigma, float K, fl
     /*Initiate seeds for MC simulations*/
     curandState* states;
     testCUDA(cudaMalloc(&states, Nb_sim * sizeof(curandState)));
-    init_curand_state_k <<<NB, NTPB>>> (states);
+    init_curand_state_k <<<NB, NTPB>>> (states, 0);
 
     MC_k1<<<NB, NTPB>>>(x, r, sigma, dt, K, B, P1, P2, M, i, j, states, PayGPU);
     
@@ -56,6 +56,7 @@ void wrapper_1(float x, int i, int j, float T, float r, float sigma, float K, fl
 
     printf("F(%i, %i, %i)=%f\n", i, (int)x, j, sum_array(PayCPU, Nb_sim));
     testCUDA(cudaFree(PayGPU));
+    testCUDA(cudaFree(states));
     free(PayCPU);
 }
 
@@ -94,7 +95,7 @@ void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, fl
     /*Initiate seeds for MC simulations*/
     curandState* states;
     testCUDA(cudaMalloc(&states, Nb_sim * sizeof(curandState)));
-    init_curand_state_k <<<NB, NTPB>>> (states);
+    init_curand_state_k <<<NB, NTPB>>> (states, 0);
 
 
     // MC_k2<<<NB, NTPB, NTPB*sizeof(float)>>>(x, r, sigma, dt, K, B, P1, P2, M, i, j, states, PayGPU);
@@ -112,8 +113,82 @@ void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, fl
     printf("F(%i, %i, %i)=%f\n", i, (int)x, j, *PayCPU/Nb_sim);
 
     testCUDA(cudaFree(PayGPU));
+    testCUDA(cudaFree(states));
     free(PayCPU);
 }
+
+void wrapper_3(char filename[], float T, float r, float sigma, float S0, float K, float B, float P1, float P2)
+{
+
+  //Parameters for numerical parameter
+  unsigned int M=100; //Number of time steps
+
+  /*Simulation variables*/
+  Option_price *PayGPU, *PayCPU;
+  unsigned int NTPB=512; /*Number of threads per block*/
+  unsigned int gridDim_x=M; /*Each block is associated with a time instant Ti.*/
+  unsigned int gridDim_y=128; /*Number of blocks having its own triplet (T_i, S_Ti, j_Ti).*/
+  unsigned int gridDim_z=128; /*Number of blocks to estimate F(Ti, S_Ti, j).*/
+  /*x-axis gives the instant of time Ti, the y-axis is a couple (S_Ti, j) and z-axis parallelizes sampling to estimate F(Ti, S_Ti, j).*/
+  dim3 Nb_blocks(gridDim_x, gridDim_y, gridDim_z);
+
+  /*Total number of Monte-Carlo estimates of F*/
+  int Nb_sim=gridDim_x * gridDim_y;
+
+  /*Total number of samples per MC estimate.*/
+  int Sample_size = gridDim_z * NTPB;
+
+  float dt=sqrtf(T/(M+1)); //IMPORTANT: It is the square root of the simulation's step size.
+
+  printf("The interval [0, %.1f] is divided into %i sub-intervals, with steps of size %.3f \n", T, M+1, dt*dt);
+
+  float TimeExec;
+  cudaEvent_t start, stop;						// GPU timer instructions
+  testCUDA(cudaEventCreate(&start));				// GPU timer instructions
+  testCUDA(cudaEventCreate(&stop));				// GPU timer instructions
+  testCUDA(cudaEventRecord(start,0));				// GPU timer instructions
+
+  /*Allocate memory on host*/
+  PayCPU=(Option_price*)malloc(Nb_sim * sizeof(Option_price));
+  if (PayCPU==nullptr) {printf("Error, unable to allocate memory."); exit(EXIT_FAILURE);}
+
+  /*To store the option price on device.*/
+  testCUDA(cudaMalloc(&PayGPU, Nb_sim * sizeof(Option_price)));
+
+  /*Initiate seeds for MC simulations. All blocks on the same (x,y)-axis will receive the same seed.*/
+  curandState* states;
+  testCUDA(cudaMalloc(&states, Nb_sim * sizeof(curandState)));
+  init_curand_state_k_init <<<Nb_sim, 1>>> (states);
+
+  /*Seed for monte-carlo sampling. All blocks on the same z-axis will receive the same seed.*/
+  curandState* states_MC;
+  testCUDA(cudaMalloc(&states_MC,  Sample_size * sizeof(curandState)));
+  init_curand_state_k <<<gridDim_z, NTPB>>> (states_MC, 2);
+
+  MC_k4<<<Nb_blocks, NTPB, NTPB*sizeof(float)>>>(r, sigma, dt, S0, K, B, P1, P2,
+	M, Nb_sim, states, states_MC, PayGPU);
+
+  /*Copy memory back into host*/
+  testCUDA(cudaMemcpy(PayCPU, PayGPU, Nb_sim * sizeof(Option_price), cudaMemcpyDeviceToHost));
+
+  testCUDA(cudaEventRecord(stop,0));				// GPU timer instructions
+  testCUDA(cudaEventSynchronize(stop));			// GPU timer instructions
+  testCUDA(cudaEventElapsedTime(&TimeExec,		// GPU timer instructions
+      start, stop));							// GPU timer instructions
+  testCUDA(cudaEventDestroy(start));				// GPU timer instructions
+  testCUDA(cudaEventDestroy(stop));				// GPU timer instructions
+
+  printf("GPU time execution for MC_k4 is: %f ms\n", TimeExec);
+
+  /*Write data in a text file.*/
+  write_data(filename, PayCPU, Nb_sim);
+
+  /*Free memory*/
+  testCUDA(cudaFree(PayGPU));
+  testCUDA(cudaFree(states));
+  testCUDA(cudaFree(states_MC));
+  free(PayCPU);
+} 
 
 
 void wrapper_trash(float T, float r, float sigma, float S0, float K, float B, float P1, float P2)
@@ -144,15 +219,13 @@ void wrapper_trash(float T, float r, float sigma, float S0, float K, float B, fl
 
   /*To store the option price on GPU.*/
   testCUDA(cudaMalloc(&PayGPU, M * 512 * NTPB * sizeof(Option_price)));
-  /*In default stream, kernel launches are serialized.*/
-  testCUDA(cudaMemset(PayGPU, 0, M * 512 * NTPB * sizeof(Option_price)));
 
   /*Initiate seeds for MC simulations*/
   curandState* states;
   testCUDA(cudaMalloc(&states, 512 * M * NTPB * sizeof(curandState)));
   init_curand_state_k_2D <<<Nb_blocks, NTPB>>> (states);
 
-  MC_k4<<<Nb_blocks, NTPB, NTPB*sizeof(float)>>>(r, sigma, dt, S0, K, B, P1, P2,
+  MC_k_trash<<<Nb_blocks, NTPB>>>(r, sigma, dt, S0, K, B, P1, P2,
 	M, Nb_sim, states, PayGPU);
   testCUDA(cudaMemcpy(PayCPU, PayGPU, sizeof(float), cudaMemcpyDeviceToHost));
 
@@ -171,5 +244,6 @@ void wrapper_trash(float T, float r, float sigma, float S0, float K, float B, fl
 
   /*Free memory*/
   testCUDA(cudaFree(PayGPU));
+  testCUDA(cudaFree(states));
   free(PayCPU);
 } 

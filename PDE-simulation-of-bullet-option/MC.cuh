@@ -16,6 +16,9 @@ __global__ void MC_k2(float x, float r, float sigma, float dt, float K, float B,
 __global__ void MC_k3(float x, float r, float sigma, float dt, float K, float B, float P1, float P2,
 	int M, int i, int j, curandState* state, float* PayGPU);
 
+__global__ void MC_k4(float r, float sigma, float dt, float S0, float K, float B, float P1, float P2,
+	int M, int Nb_sim, curandState* state, curandState* states_MC, Option_price* PayGPU);
+
 __global__ void MC_k_trash(float r, float sigma, float dt, float S0, float K, float B, float P1, float P2,
 	int M, int Nb_sim, curandState* state, Option_price* PayGPU);
 
