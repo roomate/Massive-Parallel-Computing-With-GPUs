@@ -186,7 +186,7 @@ int main(int argc, char* argv[]){
 		printf("Usage:\n");
 		printf("  %s query <N> <j> <S>\n", argv[0]);
 		printf("  %s dump <N> <output.txt>\n", argv[0]);
-		return EXIT_FAILURE;
+		exit(EXIT_FAILURE);
 	}
 
 	// Model and contract parameters from the project statement.
@@ -224,7 +224,7 @@ int main(int argc, char* argv[]){
 		if (argc != 5) {
 			printf("Usage: %s query <N> <j> <S>\n", argv[0]);
 			testCUDA(cudaFreeHost(pt_CPU));
-			return EXIT_FAILURE;
+			exit(EXIT_FAILURE);
 		}
 
 		int j_mc = atoi(argv[3]);
@@ -239,7 +239,7 @@ int main(int argc, char* argv[]){
 
 		float s_grid = expf(xmin + dx * x_idx);
 		float u_value = pt_CPU[0][j_mc][x_idx];
-		// Convert back from u to the option price F.
+		// Convert back u to the option price F.
 		float f_pde = u_value * expf(-r * interval_dt);
 
 		printf("Crank-Nicolson uses %d substeps on [%.6f, %.6f] with dt = %.6f\n",
@@ -251,14 +251,14 @@ int main(int argc, char* argv[]){
 		if (argc != 4) {
 			printf("Usage: %s dump <N> <output.txt>\n", argv[0]);
 			testCUDA(cudaFreeHost(pt_CPU));
-			return EXIT_FAILURE;
+			exit(EXIT_FAILURE);
 		}
 
 		FILE *fp = fopen(argv[3], "w");
 		if (fp == NULL) {
 			printf("Could not open output file %s\n", argv[3]);
 			testCUDA(cudaFreeHost(pt_CPU));
-			return EXIT_FAILURE;
+			exit(EXIT_FAILURE);
 		}
 
 		fprintf(fp, "# t=%.6f j S F\n", t_m_minus_1);
@@ -279,7 +279,7 @@ int main(int argc, char* argv[]){
 		printf("  %s query <N> <j> <S>\n", argv[0]);
 		printf("  %s dump <N> <output.txt>\n", argv[0]);
 		testCUDA(cudaFreeHost(pt_CPU));
-		return EXIT_FAILURE;
+		exit(EXIT_FAILURE);
 	}
 
 	testCUDA(cudaFreeHost(pt_CPU));	

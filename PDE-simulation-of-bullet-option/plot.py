@@ -1,0 +1,100 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
+
+M=100
+
+def find_index(L, val):
+    return np.argmin(np.abs(L - val))
+
+file=open("option_price.txt", "r")
+header=file.readline().strip()
+header=header.split(" ")
+
+df=pd.DataFrame(columns=header)
+
+content=()
+
+
+o=file.readline().strip().split(" ")
+o=list(map(float, o))
+
+Time=[]
+
+o=file.readline().strip().split(" ")
+k=len(o)
+o=list(map(float, o))
+
+while (k):
+    o=list(map(float, o))
+    content+=(o,)
+    if o[0] not in Time and o[0]!= 0:
+        Time+=[o[0]]
+    o=file.readline()
+    k=len(o)
+    o=o.strip().split(" ")
+
+df[df.columns]=content
+# content
+file.close()
+
+df.sort_values("Ti", inplace=True)
+df.reset_index(drop=True, inplace=True)
+idx_drop=np.where(df["Ti"]==0)[0][1:]
+df.drop(idx_drop, inplace=True)
+
+Time=np.array(Time)
+
+X=[]
+Y=[]
+Z=[]
+
+for t in Time:
+    A=df[df["Ti"]==t].drop("Ti", axis=1)
+    A.sort_values(by=["S_Ti", "j"], ascending=[True, True], axis=0, inplace=True)
+    X+=[A.S_Ti.values]
+    Y+=[A.j.values]
+    Z+=[A.loc[:,A.columns[-1]].values]
+
+
+i=M//2
+delta_t=1/(M+1)
+
+fig = plt.figure()
+
+ax_time = fig.add_axes(rect=[0.15, 0.3, 0.0225, 0.4])
+
+allowed_time=Time.sort()
+
+#Declare the Slider
+Time_slider = Slider(
+    ax=ax_time,
+    label="$T_i$",
+    valstep=allowed_time,
+    valmin=1/(M+1),
+    valmax=M/(M+1),
+    valinit=M//2/(M+1),
+    orientation="vertical"
+)
+
+ax = fig.add_subplot(projection='3d')
+scatt=ax.scatter(X[i], Y[i], Z[i])
+
+##Callback functions of sliders
+def update(val):
+    idx=find_index(Time, val)
+    scatt._offsets3d = (X[idx], Y[idx], Z[idx])
+    fig.canvas.draw_idle()
+
+# register the update function with each slider
+Time_slider.on_changed(update)
+
+
+ax.set_box_aspect(None, zoom=0.85)
+
+ax.set_xlabel("$S_{T_i}$")
+ax.set_ylabel("$I_{T_i}$")
+ax.set_zlabel("F")
+ax.set_title("Bullet option price $F$ versus $S_{T_i}, I_{T_i}$.")
+plt.show()

@@ -142,7 +142,6 @@ __global__ void PDE_diff_kernel (float dt, float dx, float pmin,
 			((m > 0) && (m < NTPB - 1)) * sy[NTPB * (i % 2) + m];
 		__syncthreads();
 	}
-	
 	// Store the solution at the beginning of the interval.
 	pt_GPU[0][j][m] = sy[m + NTPB*(N % 2)];
 }
@@ -157,10 +156,10 @@ __global__ void discontinuity_kernel(float xmin, float dx, float B,
 
 	// Apply the observation-date jump in j depending on whether S crosses the barrier.
 	if (j == P2) {
-		value = (S >= B) ? src[0][P2][m] : 0.0f;
+		value = (S >= B) * src[0][P2][m];
 	}
 	else if (Pk1 > 0 && j == Pk1 - 1) {
-		value = (S < B) ? src[0][Pk1][m] : 0.0f;
+		value = (S < B) * src[0][Pk1][m];
 	}
 	else if (j >= Pk1 && j < P2) {
 		value = (S >= B) ? src[0][j][m] : src[0][j + 1][m];
@@ -168,7 +167,6 @@ __global__ void discontinuity_kernel(float xmin, float dx, float B,
 
 	dst[0][j][m] = value;
 }
-
 
 
 // Wrapper 
@@ -227,10 +225,8 @@ void PDE_full(float interval_dt, float dx, float xmin, float B, float pmin,
 
 		PDE_diff_kernel<<<NB, NTPB, 6 * NTPB * sizeof(float)>>>(
 			dt, dx, pmin, r, N, Pk1, P2, K, GPUTab);
-		testCUDA(cudaGetLastError());
 
 		discontinuity_kernel<<<NB, NTPB>>>(xmin, dx, B, Pk1, P2, GPUTab, TmpTab);
-		testCUDA(cudaGetLastError());
 
 		// The updated grid becomes the input for the next time interval.
 		MyTab *SwapTab = GPUTab;
@@ -258,7 +254,7 @@ int main(int argc, char* argv[]){
 		printf("Usage:\n");
 		printf("  %s query <N> <j> <S>\n", argv[0]);
 		printf("  %s dump <N> <output.txt>\n", argv[0]);
-		return EXIT_FAILURE;
+		exit(EXIT_FAILURE);
 	}
 
 	// Model and contract parameters from the project statement.
@@ -285,7 +281,7 @@ int main(int argc, char* argv[]){
 	   int j_val = i;
 	   for(int j=0; j<NTPB; j++){
 	      float S = exp(xmin + dx * j);
-	      pt_CPU[0][i][j] = (j_val >= P1 && j_val <= P2) * fmaxf(S - K, 0.0f);
+	      pt_CPU[0][i][j] = (j_val >= P1 && j_val <= P2) * fmaxf(S - K, 0.0f); /*Set terminal conditions*/
 	   }	
 	}
 
@@ -322,14 +318,14 @@ int main(int argc, char* argv[]){
 		if (argc != 4) {
 			printf("Usage: %s dump <N> <output.txt>\n", argv[0]);
 			testCUDA(cudaFreeHost(pt_CPU));
-			return EXIT_FAILURE;
+			exit(EXIT_FAILURE);
 		}
 
 		FILE *fp = fopen(argv[3], "w");
 		if (fp == NULL) {
 			printf("Could not open output file %s\n", argv[3]);
 			testCUDA(cudaFreeHost(pt_CPU));
-			return EXIT_FAILURE;
+			exit(EXIT_FAILURE);
 		}
 
 		fprintf(fp, "# t=0.000000 j S F\n");
@@ -350,7 +346,7 @@ int main(int argc, char* argv[]){
 		printf("  %s query <N> <j> <S>\n", argv[0]);
 		printf("  %s dump <N> <output.txt>\n", argv[0]);
 		testCUDA(cudaFreeHost(pt_CPU));
-		return EXIT_FAILURE;
+		exit(EXIT_FAILURE);
 	}
 
 	testCUDA(cudaFreeHost(pt_CPU));	

@@ -47,4 +47,9 @@ int main(int argc, char* argv[])
       printf("It is going to take a lot of time!\n");
       wrapper_trash(T, r, sigma, S0, K, B, P1, P2);
     }
+    else
+    {
+      printf("The command line must be used to pass a mode between 1 and 4 included.");
+      return 0;
+    }
 }

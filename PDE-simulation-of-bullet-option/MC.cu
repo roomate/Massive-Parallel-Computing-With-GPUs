@@ -186,6 +186,69 @@ __global__ void MC_k4(float r, float sigma, float dt, float S0, float K, float B
   }
 }
 
+__global__ void MC_k5(float r, float sigma, float dt, float S0, float K, float B, float P1, float P2,
+	int M, int Sample_size, curandState* state, curandState* states_MC, Option_price* PayGPU)
+{
+  int idx_init_state = blockIdx.y * gridDim.x + blockIdx.x;
+
+  /*Each block has its own copy of tmp.*/
+  extern __shared__ float tmp[];
+
+  curandState localState = state[idx_init_state];
+
+  float S_Ti=S0;
+  int j_Ti=0;
+  float2 G;
+
+  /*This computation should be identical for blocks with the same (x,y) coordinates*/
+  for (int i=0; i<M; ++i)
+  {
+    G = curand_normal2(&localState); /*Sample the unit gaussian law.*/
+    S_Ti *= expf((r - sigma*sigma/2) * dt * dt + sigma * dt * G.x)*(i < blockIdx.x) + (i >= blockIdx.x);
+    j_Ti+=(S_Ti<=B)*(i < blockIdx.x);
+  }
+
+  float S=S_Ti;
+  int j=j_Ti;
+
+  /*Id of the thread on the z-axis. Block with the same z coordinate have the same seed.*/
+  int idx_MC = blockIdx.z * blockDim.z + threadIdx.x;
+  localState = state[idx_MC];
+
+  for (int i = 0; i <= M; ++i) {
+      G = curand_normal2(&localState); /*Sample the unit gaussian law.*/
+      S *= expf((r - sigma*sigma/2) * dt * dt + sigma * dt * G.x)*(i >= blockIdx.x) + (i < blockIdx.x);
+      j+=(S<=B)*(i >= blockIdx.x);
+  }
+
+  tmp[threadIdx.x] = expf(-r * (M-blockIdx.x) * dt * dt) * fmaxf(0.0f, S - K) * (((float)j>=P1) && ((float)j<=P2));
+  
+  /*Dyadic thread reduction of blocks with the same (x,y) coordinates.*/
+
+  /*Block-level synchronization barrier.*/
+   __syncthreads();
+
+  int counter = blockDim.x / 2; /*It is basically a decreasing counter.*/
+  /*Apply dyadic thread reduction between threads in the same block.*/
+  while (counter != 0) {
+    if (threadIdx.x < counter) { //There's no divergence here because no else condition
+      tmp[threadIdx.x] += tmp[threadIdx.x + counter];
+    }
+    __syncthreads();
+    counter /= 2;
+  }
+  /*Add the result of each block to PayGPU.*/
+  if (threadIdx.x == 0) {
+    /*Store conditional parameters*/
+    PayGPU[idx_init_state].Ti=(blockIdx.x)*dt*dt;
+    PayGPU[idx_init_state].x=S_Ti;
+    PayGPU[idx_init_state].j=j_Ti;
+
+    atomicAdd(&(PayGPU[idx_init_state].F), tmp[0]/Sample_size);
+  }
+}
+
+
 
 __global__ void MC_k_trash(float r, float sigma, float dt, float S0, float K, float B, float P1, float P2,
 	int M, int Nb_sim, curandState* state, Option_price* PayGPU)
