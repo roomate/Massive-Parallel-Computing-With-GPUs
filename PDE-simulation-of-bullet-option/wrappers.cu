@@ -23,6 +23,7 @@ void wrapper_1(float x, int i, int j, float T, float r, float sigma, float K, fl
     assert (x>=0);
     assert (j<=i);
 
+
     float TimeExec;
   	cudaEvent_t start, stop;						// GPU timer instructions
 	  testCUDA(cudaEventCreate(&start));				// GPU timer instructions
@@ -53,8 +54,8 @@ void wrapper_1(float x, int i, int j, float T, float r, float sigma, float K, fl
 	  testCUDA(cudaEventDestroy(stop));				// GPU timer instructions
 
 	  printf("GPU time execution for MC_k1 is: %f ms\n", TimeExec);
-
     printf("F(%i, %i, %i)=%f\n", i, (int)x, j, mean(PayCPU, Nb_sim));
+
     testCUDA(cudaFree(PayGPU));
     testCUDA(cudaFree(states));
     free(PayCPU);
@@ -88,7 +89,7 @@ void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, fl
     if (PayCPU==nullptr) {printf("Error, unable to allocate memory."); exit(EXIT_FAILURE);}
 
     /*To store the option price on GPU.*/
-	testCUDA(cudaMalloc(&PayGPU, sizeof(float)));
+	  testCUDA(cudaMalloc(&PayGPU, sizeof(float)));
     /*In default stream, kernel launches are serialized.*/
     testCUDA(cudaMemset(PayGPU, 0, sizeof(float)));
 
@@ -102,6 +103,8 @@ void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, fl
     MC_k3<<<NB, NTPB, NTPB*sizeof(float)>>>(x, r, sigma, dt, K, B, P1, P2, M, i, j, states, PayGPU);
     testCUDA(cudaMemcpy(PayCPU, PayGPU, sizeof(float), cudaMemcpyDeviceToHost));
 
+    printf("F(%i, %i, %i)=%f\n", i, (int)x, j, *PayCPU/Nb_sim);
+
     testCUDA(cudaEventRecord(stop,0));				// GPU timer instructions
 	  testCUDA(cudaEventSynchronize(stop));			// GPU timer instructions
 	  testCUDA(cudaEventElapsedTime(&TimeExec,		// GPU timer instructions
@@ -110,7 +113,6 @@ void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, fl
 	  testCUDA(cudaEventDestroy(stop));				// GPU timer instructions
 
 	  printf("GPU time execution for MC_k3 is: %f ms\n", TimeExec);
-    printf("F(%i, %i, %i)=%f\n", i, (int)x, j, *PayCPU/Nb_sim);
 
     testCUDA(cudaFree(PayGPU));
     testCUDA(cudaFree(states));
@@ -126,7 +128,7 @@ void wrapper_3(char filename[], float T, float r, float sigma, float S0, float K
   /*Simulation variables*/
   Option_price *PayGPU, *PayCPU;
   unsigned int NTPB=512; /*Number of threads per block*/
-  unsigned int gridDim_x=M; /*Each block is associated with a time instant Ti.*/
+  unsigned int gridDim_x=M+1; /*Each block is associated with a time instant Ti.*/
   unsigned int gridDim_y=128; /*Number of blocks having its own triplet (T_i, S_Ti, j_Ti).*/
   unsigned int gridDim_z=128; /*Number of blocks to estimate F(Ti, S_Ti, j).*/
   /*x-axis gives the instant of time Ti, the y-axis is a couple (S_Ti, j) and z-axis parallelizes sampling to estimate F(Ti, S_Ti, j).*/
@@ -179,7 +181,7 @@ void wrapper_3(char filename[], float T, float r, float sigma, float S0, float K
   testCUDA(cudaEventDestroy(stop));				// GPU timer instructions
 
   printf("GPU time execution for MC_k4 is: %f ms\n", TimeExec);
-
+  
   /*Write data in a text file.*/
   write_data(filename, PayCPU, Nb_sim);
 

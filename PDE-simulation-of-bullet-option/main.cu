@@ -24,6 +24,7 @@ int main(int argc, char* argv[])
       float x=atof(argv[2]);
       int j=atoi(argv[3]);
       int i=atoi(argv[4]);
+      if (i==0) {x=S0; j=0;}
       wrapper_1(x, i, j, T, r, sigma, K, B, P1, P2);
     }
     else if (mode==2)
@@ -32,6 +33,7 @@ int main(int argc, char* argv[])
       float x=atof(argv[2]);
       int j=atoi(argv[3]);
       int i=atoi(argv[4]);
+      if (i==0) {x=S0; j=0;}
       wrapper_2(x, i, j, T, r, sigma, K, B, P1, P2);
     }
     else if (mode==3)
