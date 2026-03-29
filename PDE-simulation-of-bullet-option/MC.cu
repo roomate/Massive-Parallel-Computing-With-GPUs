@@ -124,12 +124,14 @@ __global__ void MC_k3(float x, float r, float sigma, float dt, float K, float B,
 }
 
 __global__ void MC_k4(float r, float sigma, float dt, float S0, float K, float B, float P1, float P2,
-	int M, int Sample_size, curandState* state, curandState* states_MC, Option_price* PayGPU)
+	int M, int N_per_thread, int Sample_size, curandState* state, curandState* states_MC, Option_price* PayGPU)
 {
   int idx_init_state = blockIdx.y * gridDim.x + blockIdx.x;
 
   /*Each block has its own copy of tmp.*/
   extern __shared__ float tmp[];
+
+  float reg;
 
   curandState localState = state[idx_init_state];
 
@@ -145,20 +147,27 @@ __global__ void MC_k4(float r, float sigma, float dt, float S0, float K, float B
     j_Ti+=(S_Ti<=B)*(i < blockIdx.x);
   }
 
-  float S=S_Ti;
-  int j=j_Ti;
+  float S;
+  int j;
 
   /*Id of the thread on the z-axis. Block with the same z coordinate have the same seed.*/
-  int idx_MC = blockIdx.z * blockDim.z + threadIdx.x;
-  localState = state[idx_MC];
+  int idx_MC = blockIdx.z * blockDim.x + threadIdx.x;
+  localState = states_MC[idx_MC];
 
-  for (int i = 0; i <= M; ++i) {
-      G = curand_normal2(&localState); /*Sample the unit gaussian law.*/
-      S *= expf((r - sigma*sigma/2) * dt * dt + sigma * dt * G.x)*(i >= blockIdx.x) + (i < blockIdx.x);
-      j+=(S<=B)*(i >= blockIdx.x);
+  reg=0;
+
+  for (int l=0; l<N_per_thread; ++l)
+  {
+    S=S_Ti;
+    j=j_Ti;
+    for (int i = 0; i <= M; ++i) {
+        G = curand_normal2(&localState); /*Sample the unit gaussian law.*/
+        S *= expf((r - sigma*sigma/2) * dt * dt + sigma * dt * G.x)*(i >= blockIdx.x) + (i < blockIdx.x);
+        j+=(S<=B)*(i >= blockIdx.x);
+    }
+    reg += expf(-r * (M-blockIdx.x) * dt * dt) * fmaxf(0.0f, S - K) * (((float)j>=P1) && ((float)j<=P2));
   }
-
-  tmp[threadIdx.x] = expf(-r * (M-blockIdx.x) * dt * dt) * fmaxf(0.0f, S - K) * (((float)j>=P1) && ((float)j<=P2));
+  tmp[threadIdx.x] = reg / N_per_thread;
   
   /*Dyadic thread reduction of blocks with the same (x,y) coordinates.*/
 

@@ -52,7 +52,7 @@ __global__ void init_curand_state_k_init(curandState* state)
 void write_data(char filename[], Option_price* data, int length)
 {
   FILE* file=fopen(filename, "w");
-  if (file==nullptr) {printf("Error. Unable to open a file for writing.\n"); exit(EXIT_FAILURE);}
+  if (file==nullptr) {printf("Error. Unable to open a file for writing.\n"); free(data); exit(EXIT_FAILURE);}
   fprintf(file, "Ti S_Ti j F(Ti,S_Ti,j) \n");
   for (int i=0; i<length; ++i)
   {
