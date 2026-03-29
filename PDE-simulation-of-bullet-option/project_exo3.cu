@@ -39,7 +39,7 @@ __device__ void PCR_d(float* sa, float* sd, float* sc,
 	tR = threadIdx.x + 1;
 	if (tR >= n) tR = 0;
 
-	// Each iteration eliminates one more level of off-diagonal coupling.
+	// Each iteration removes one more level of off-diagonal dependence.
 	for (i = 0; i < (int)(logf((float)n) / logf(2.0f)) + 1; i++) {
 		lL = (int)sl[threadIdx.x];
 
@@ -147,6 +147,28 @@ __global__ void PDE_diff_kernel (float dt, float dx, float pmin,
 	pt_GPU[0][j][m] = sy[m + NTPB*(N % 2)];
 }
 
+__global__ void discontinuity_kernel(float xmin, float dx, float B,
+									 int Pk1, int P2, MyTab *src, MyTab *dst) {
+
+	int j = blockIdx.x;
+	int m = threadIdx.x;
+	float S = expf(xmin + dx * m);
+	float value = 0.0f;
+
+	// Apply the observation-date jump in j depending on whether S crosses the barrier.
+	if (j == P2) {
+		value = (S >= B) ? src[0][P2][m] : 0.0f;
+	}
+	else if (Pk1 > 0 && j == Pk1 - 1) {
+		value = (S < B) ? src[0][Pk1][m] : 0.0f;
+	}
+	else if (j >= Pk1 && j < P2) {
+		value = (S >= B) ? src[0][j][m] : src[0][j + 1][m];
+	}
+
+	dst[0][j][m] = value;
+}
+
 
 
 // Wrapper 
@@ -175,9 +197,59 @@ void PDE_diff (float dt, float dx, float pmin, float r, int N, int P1, int P2, f
 	testCUDA(cudaEventDestroy(start));				// GPU timer instructions
 	testCUDA(cudaEventDestroy(stop));				// GPU timer instructions
 
-	printf("GPU time execution for PDE resolution: %f ms\n", TimeExec);
+	printf("GPU time execution for PDE diffusion: %f ms\n", TimeExec);
 
 	testCUDA(cudaFree(GPUTab));	
+}
+
+void PDE_full(float interval_dt, float dx, float xmin, float B, float pmin,
+			  float r, int N, int M, int P1, int P2, float K, MyTab* CPUTab) {
+
+	float TimeExec;
+	cudaEvent_t start, stop;
+	testCUDA(cudaEventCreate(&start));
+	testCUDA(cudaEventCreate(&stop));
+	testCUDA(cudaEventRecord(start, 0));
+
+	// Two buffers are needed because the discontinuity update reads j and j+1.
+	MyTab *GPUTab;
+	MyTab *TmpTab;
+	testCUDA(cudaMalloc(&GPUTab, sizeof(MyTab)));
+	testCUDA(cudaMalloc(&TmpTab, sizeof(MyTab)));
+	testCUDA(cudaMemcpy(GPUTab, CPUTab, sizeof(MyTab), cudaMemcpyHostToDevice));
+
+	float dt = interval_dt / N;
+
+	// March backward from T to T_0 by alternating PDE propagation and jump updates.
+	for (int k = 0; k <= M; k++) {
+		int Pk1 = P1 - k;
+		if (Pk1 < 0) Pk1 = 0;
+
+		PDE_diff_kernel<<<NB, NTPB, 6 * NTPB * sizeof(float)>>>(
+			dt, dx, pmin, r, N, Pk1, P2, K, GPUTab);
+		testCUDA(cudaGetLastError());
+
+		discontinuity_kernel<<<NB, NTPB>>>(xmin, dx, B, Pk1, P2, GPUTab, TmpTab);
+		testCUDA(cudaGetLastError());
+
+		// The updated grid becomes the input for the next time interval.
+		MyTab *SwapTab = GPUTab;
+		GPUTab = TmpTab;
+		TmpTab = SwapTab;
+	}
+
+	testCUDA(cudaMemcpy(CPUTab, GPUTab, sizeof(MyTab), cudaMemcpyDeviceToHost));
+
+	testCUDA(cudaEventRecord(stop, 0));
+	testCUDA(cudaEventSynchronize(stop));
+	testCUDA(cudaEventElapsedTime(&TimeExec, start, stop));
+	testCUDA(cudaEventDestroy(start));
+	testCUDA(cudaEventDestroy(stop));
+
+	printf("GPU time execution for full PDE solve: %f ms\n", TimeExec);
+
+	testCUDA(cudaFree(GPUTab));
+	testCUDA(cudaFree(TmpTab));
 }
 
 int main(int argc, char* argv[]){
@@ -193,11 +265,11 @@ int main(int argc, char* argv[]){
 	float K = 100.0f;
 	float T = 1.0f;
 	float r = 0.1f;
+	float B = 110.0f;
 	int M = 100;
 	int N = atoi(argv[2]);
 	float interval_dt = T / (M+1);
 	float dt = interval_dt / N;
-	float t_m_minus_1 = T - interval_dt;
 	float xmin = log(2.0f * K / 5.0f);
 	float xmax = log(5.0f * K / 2.0f);
 	float dx = (xmax - xmin) / (NTPB - 1);
@@ -217,8 +289,8 @@ int main(int argc, char* argv[]){
 	   }	
 	}
 
-	// Solve only the last interval [T_M, T).
-	PDE_diff(dt, dx, pmin, r, N, P1, P2, K, pt_CPU);
+	// Solve the full exercise 3 problem by going backward through all dates.
+	PDE_full(interval_dt, dx, xmin, B, pmin, r, N, M, P1, P2, K, pt_CPU);
 
 	if (strcmp(argv[1], "query") == 0) {
 		if (argc != 5) {
@@ -239,13 +311,12 @@ int main(int argc, char* argv[]){
 
 		float s_grid = expf(xmin + dx * x_idx);
 		float u_value = pt_CPU[0][j_mc][x_idx];
-		// Convert back from u to the option price F.
-		float f_pde = u_value * expf(-r * interval_dt);
+		// Convert back from u(0, x, j) to the option price F(0, S, j).
+		float f_pde = u_value * expf(-r * T);
 
-		printf("Crank-Nicolson uses %d substeps on [%.6f, %.6f] with dt = %.6f\n",
-			N, t_m_minus_1, T, dt);
-		printf("PDE result for T_{M} = %.6f, j=%d, S~=%.2f (grid S=%.6f): F = %f\n",
-			t_m_minus_1, j_mc, s_target, s_grid, f_pde);
+		printf("Full PDE solve uses %d substeps per interval with dt = %.6f\n", N, dt);
+		printf("PDE result for T_0 = 0.000000, j=%d, S~=%.2f (grid S=%.6f): F = %f\n",
+			j_mc, s_target, s_grid, f_pde);
 	}
 	else if (strcmp(argv[1], "dump") == 0) {
 		if (argc != 4) {
@@ -261,11 +332,11 @@ int main(int argc, char* argv[]){
 			return EXIT_FAILURE;
 		}
 
-		fprintf(fp, "# t=%.6f j S F\n", t_m_minus_1);
+		fprintf(fp, "# t=0.000000 j S F\n");
 		for (int j = 0; j < NB; j++) {
 			for (int x = 0; x < NTPB; x++) {
 				float S = expf(xmin + dx * x);
-				float F = pt_CPU[0][j][x] * expf(-r * interval_dt);
+				float F = pt_CPU[0][j][x] * expf(-r * T);
 				fprintf(fp, "%d %.8f %.8f\n", j, S, F);
 			}
 		}
