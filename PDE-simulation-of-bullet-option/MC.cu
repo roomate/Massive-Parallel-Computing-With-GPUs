@@ -11,7 +11,7 @@ __global__ void MC_k1(float x, float r, float sigma, float dt, float K, float B,
 	float2 G;
 	float S = x;
 
-	for (int k = i; k < M; k++) {
+	for (int k = i; k <= M; ++k) {
 		G = curand_normal2(&localState); /*Sample the unit gaussian law.*/
 		S *= expf((r - sigma*sigma/2) * dt * dt + sigma * dt * G.x);
     j+=(S<=B);
@@ -34,7 +34,7 @@ __global__ void MC_k2(float x, float r, float sigma, float dt, float K, float B,
   float2 G;
   float S = x;
 
-  for (int k = i; k < M; k++) {
+  for (int k = i; k <= M; ++k) {
     G = curand_normal2(&localState); /*Sample the unit gaussian law.*/
     S *= expf((r - sigma*sigma/2) * dt * dt + sigma * dt * G.x);
     j+=(S<=B);
@@ -77,7 +77,7 @@ __global__ void MC_k3(float x, float r, float sigma, float dt, float K, float B,
   float2 G;
   float S = x;
 
-  for (int k = i; k < M; k++) {
+  for (int k = i; k <= M; ++k) {
     G = curand_normal2(&localState); /*Sample the unit gaussian law.*/
     S *= expf((r - sigma*sigma/2) * dt * dt + sigma * dt * G.x);
     j+=(S<=B);
@@ -138,11 +138,11 @@ __global__ void MC_k4(float r, float sigma, float dt, float S0, float K, float B
   float2 G;
 
   /*This computation should be identical for blocks with the same (x,y) coordinates*/
-  for (int i=0; i<M; ++i)
+  for (int i=0; i<=M; ++i)
   {
     G = curand_normal2(&localState); /*Sample the unit gaussian law.*/
-    S_Ti *= expf((r - sigma*sigma/2) * dt * dt + sigma * dt * G.x)*(i <= blockIdx.x) + (i > blockIdx.x);
-    j_Ti+=(S_Ti<=B)*(i <= blockIdx.x);
+    S_Ti *= expf((r - sigma*sigma/2) * dt * dt + sigma * dt * G.x)*(i < blockIdx.x) + (i >= blockIdx.x);
+    j_Ti+=(S_Ti<=B)*(i < blockIdx.x);
   }
 
   float S=S_Ti;
@@ -152,10 +152,10 @@ __global__ void MC_k4(float r, float sigma, float dt, float S0, float K, float B
   int idx_MC = blockIdx.z * blockDim.z + threadIdx.x;
   localState = state[idx_MC];
 
-  for (int i = 1; i <= M; ++i) {
+  for (int i = 0; i <= M; ++i) {
       G = curand_normal2(&localState); /*Sample the unit gaussian law.*/
-      S *= expf((r - sigma*sigma/2) * dt * dt + sigma * dt * G.x)*(i > blockIdx.x) + (i <= blockIdx.x);
-      j+=(S<=B)*(i > blockIdx.x);
+      S *= expf((r - sigma*sigma/2) * dt * dt + sigma * dt * G.x)*(i >= blockIdx.x) + (i < blockIdx.x);
+      j+=(S<=B)*(i >= blockIdx.x);
   }
 
   tmp[threadIdx.x] = expf(-r * (M-blockIdx.x) * dt * dt) * fmaxf(0.0f, S - K) * (((float)j>=P1) && ((float)j<=P2));
@@ -177,7 +177,7 @@ __global__ void MC_k4(float r, float sigma, float dt, float S0, float K, float B
   /*Add the result of each block to PayGPU.*/
   if (threadIdx.x == 0) {
     /*Store conditional parameters*/
-    PayGPU[idx_init_state].Ti=(blockIdx.x+1)*dt*dt;
+    PayGPU[idx_init_state].Ti=(blockIdx.x)*dt*dt;
     PayGPU[idx_init_state].x=S_Ti;
     PayGPU[idx_init_state].j=j_Ti;
 
