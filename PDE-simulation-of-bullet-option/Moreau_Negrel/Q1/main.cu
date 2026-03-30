@@ -50,7 +50,6 @@ int main(int argc, char* argv[])
     else
     {
       printf("The command line must be used to pass a mode between 1 and 4 included.");
-      exit(1);
+      return 0;
     }
-    return 0;
 }

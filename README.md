@@ -18,38 +18,48 @@ This repository stores all the labs completed of the course [Massive Parallel Co
 
 ## Project *PDE Simulation of Bullet Option*
 
-
+The project aims to use the parallelisation capacity of GPUs for bullet option pricing. This is a highly constrained and path-dependant contract, a estimation of good quality would require around $10^6$ samples per estimate.
 
 ### Repository structure
 
 ```
 .
 ├── Labs
-│   ├── Lab1
-│   │   ├── DevQuery.cu
-│   │   └── Device_Query_Lab.ipynb
-│   ├── Lab2
-│   │   ├── HW_built_Lab.ipynb
-│   │   └── HWbuilt.cu
-│   ├── Lab3
-│   │   ├── Add_timer_cpu.cu
-│   │   ├── Add_timer_gpu.cu
-│   │   ├── Array_Add_Lab.ipynb
-│   │   └── timer.h
-│   ├── Lab4
-│   │   ├── MC.cu
-│   │   ├── MC2.cu
-│   │   ├── MC_Lab.ipynb
-│   │   ├── NMC.cu
-│   │   └── NMC_Lab.ipynb
-│   └── Lab5
-│       ├── Explicit_Lab.ipynb
-│       └── PDE.cu
+│   ├── Lab1
+│   │   ├── DevQuery.cu
+│   │   └── Device_Query_Lab.ipynb
+│   ├── Lab2
+│   │   ├── HW_built_Lab.ipynb
+│   │   └── HWbuilt.cu
+│   ├── Lab3
+│   │   ├── Add_timer_cpu.cu
+│   │   ├── Add_timer_gpu.cu
+│   │   ├── Array_Add_Lab.ipynb
+│   │   └── timer.h
+│   ├── Lab4
+│   │   ├── MC.cu
+│   │   ├── MC2.cu
+│   │   ├── MC_Lab.ipynb
+│   │   ├── NMC.cu
+│   │   └── NMC_Lab.ipynb
+│   └── Lab5
+│       ├── Explicit_Lab.ipynb
+│       └── PDE.cu
 ├── PDE-simulation-of-bullet-option
-│   ├── project.cu
-│   └── project.ipynb
-└── README.md
-```
+│   ├── MC.cu
+│   ├── MC.cuh
+│   ├── Makefile
+│   ├── main.cu
+│   ├── plot.py
+│   ├── project.ipynb
+│   ├── project_exo2.cu
+│   ├── project_exo3.cu
+│   ├── test.py
+│   ├── utils.cu
+│   ├── utils.cuh
+│   ├── wrappers.cu
+│   └── wrappers.cuh
+└── README.md```
 
 
 

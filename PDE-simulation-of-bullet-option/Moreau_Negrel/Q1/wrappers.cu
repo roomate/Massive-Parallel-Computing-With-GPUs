@@ -127,8 +127,8 @@ void wrapper_3(char filename[], float T, float r, float sigma, float S0, float K
   Option_price *PayGPU, *PayCPU;
   unsigned int NTPB=512; /*Number of threads per block*/
   unsigned int gridDim_x=M+1; /*Each block is associated with a time instant Ti.*/
-  unsigned int gridDim_y=256; /*Number of blocks having its own triplet (T_i, S_Ti, j_Ti).*/ /*Error in the rendered code.*/
-  unsigned int gridDim_z=256; /*Number of blocks to estimate F(Ti, S_Ti, j).*/ /*Error in the rendered code.*/
+  unsigned int gridDim_y=264; /*Number of blocks having its own triplet (T_i, S_Ti, j_Ti).*/
+  unsigned int gridDim_z=264; /*Number of blocks to estimate F(Ti, S_Ti, j).*/
   /*x-axis gives the instant of time Ti, the y-axis is a couple (S_Ti, j) and z-axis parallelizes sampling to estimate F(Ti, S_Ti, j).*/
   dim3 Nb_blocks(gridDim_x, gridDim_y, gridDim_z);
 
@@ -193,7 +193,8 @@ void wrapper_3(char filename[], float T, float r, float sigma, float S0, float K
   write_data(filename, PayCPU, Nb_sim);
 
   free(PayCPU);
-}
+} 
+
 
 void wrapper_trash(float T, float r, float sigma, float S0, float K, float B, float P1, float P2)
 {
@@ -240,16 +241,14 @@ void wrapper_trash(float T, float r, float sigma, float S0, float K, float B, fl
   testCUDA(cudaEventDestroy(start));				// GPU timer instructions
   testCUDA(cudaEventDestroy(stop));				// GPU timer instructions
 
-  printf("GPU time execution for MC_k_trash is: %f ms\n", TimeExec);
+  printf("GPU time execution for MC_k4 is: %f ms\n", TimeExec);
   
   /*Write data in a text file.*/
   char filename[]="option_price.txt";
+  write_data(filename, PayCPU, 512 * M * NTPB);
 
   /*Free memory*/
   testCUDA(cudaFree(PayGPU));
   testCUDA(cudaFree(states));
-
-  write_data(filename, PayCPU, 512 * M * NTPB);
-
   free(PayCPU);
 } 
