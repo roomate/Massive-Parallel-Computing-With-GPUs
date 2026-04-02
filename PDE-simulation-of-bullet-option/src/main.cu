@@ -1,7 +1,5 @@
 #include <stdio.h>
-#include <curand_kernel.h>
 #include "wrappers.cuh"
-#include "utils.cuh"
 
 
 int main(int argc, char* argv[])

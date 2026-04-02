@@ -12,13 +12,20 @@ This repository stores all the labs completed of the course [Massive Parallel Co
     * on-device. A code implementing Dyadic thread reduction using shared memory on the kernel is proposed.
 - Lab5: *Partial Differential Equation*. Solve the backward Fokker–Planck equation using three different approaches with a finite-difference schemes. To a greater or lesser extent, each approach leverages the capabilities of the device in a different way.
     * Explicit Euler scheme.
-    * Implicit Euler scheme.
-    * Crank-Nicolson scheme, aka semi-implicit semi-explicit.
+    * Implicit Euler scheme with Thomas' method to solve the tridiagonal system. Despite simple, the main bottleneck is that it cannot be efficiently parallelised on GPUs.
+    * Crank-Nicolson scheme, aka semi-implicit semi-explicit for better stability properties. Parallel-Cyclic Reduction algorithm is implemented to solve the resulting tridiagonal system. Although this algorithm is more complex, it lends itself much more naturally to parallelisation on GPU grids.
 
 
 ## Project *PDE Simulation of Bullet Option*
 
-The project aims to use the parallelisation capacity of GPUs for bullet option pricing. This is a highly constrained and path-dependant contract, a estimation of good quality would require around $10^6$ samples per estimate.
+The project aims to utilise the parallelisation capabilities of GPUs for pricing bullet options, which are exotic, path-dependent contracts.
+
+Two numerical solutions are proposed:
+
+- Monte-Carlo algorithm. The device grid parallelises a large number of asset price trajectories and combines them to provide an option price Monte-Carlo estimator.
+- The finite-difference scheme. The Black-Scholes partial differential equation (i.e. a backward Fokker–Planck equation) is solved using a Crank–Nicolson finite-difference scheme that leverages the Parallel Cyclic Reduction algorithm.
+
+Both yield a solution within a comparable time frame of around a second.
 
 ### Repository structure
 
@@ -43,23 +50,31 @@ The project aims to use the parallelisation capacity of GPUs for bullet option p
 │   │   ├── NMC.cu
 │   │   └── NMC_Lab.ipynb
 │   └── Lab5
+│       ├── Crank_Lab.ipynb
 │       ├── Explicit_Lab.ipynb
-│       └── PDE.cu
+│       ├── Implicit_Lab.ipynb
+│       ├── Optim_Lab.ipynb
+│       ├── PDE_Crank.cu                    # Crank-Nicolson scheme
+│       ├── PDE_explicit.cu                 # Euler explicit scheme
+│       ├── PDE_implicit.cu                 # Euler implicit scheme
+│       └── PDE_optim.cu                    # Uses shared memory instead of global memory
 ├── PDE-simulation-of-bullet-option
-│   ├── MC.cu
-│   ├── MC.cuh
-│   ├── Makefile
-│   ├── main.cu
+│   ├── HPC_GPU.pdf
+│   ├── Makefile                            # Compilation routine
+│   ├── include
+│   │   ├── MC.cuh
+│   │   ├── utils.cuh
+│   │   └── wrappers.cuh
 │   ├── plot.py
-│   ├── project.ipynb
-│   ├── project_exo2.cu
-│   ├── project_exo3.cu
-│   ├── test.py
-│   ├── utils.cu
-│   ├── utils.cuh
-│   ├── wrappers.cu
-│   └── wrappers.cuh
-└── README.md```
+│   └── src
+│       ├── MC.cu                           # algorithms for sampling to estimate the option price
+│       ├── PDE_full.cu                     # Solve the Black-Scholes equation over the whole interval [0, T]
+│       ├── PDE_one_step.cu                 # Solve the Black-Scholes equation for a single step-size
+│       ├── main.cu                         # main file
+│       ├── utils.cu                        # Multiple utility functions
+│       └── wrappers.cu                     # Wrapper around Monte-Carlo algorithms
+└── README.md
+```
 
 
 
