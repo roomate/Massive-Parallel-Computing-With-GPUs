@@ -2,6 +2,45 @@
 
 This repository stores all the labs completed of the course [Massive Parallel Computing with GPUs](https://finance.math.upmc.fr/enseignements/2_mn_4_massive_parallel/) given at Sorbonne University between February and March 2026, as well as the project carried out for validation.
 
+## Project *PDE Simulation of Bullet Option*
+
+### Context
+
+The project aims to utilise **the parallelisation capabilities of GPUs to price bullet options**, which are exotic, path-dependent contracts. Due to the highly constrained nature of option values, computing precise estimates demands high computational power, which is where GPUs come in. This is a scientifically challenging and relevant project demanding:
+
+- The ability to write complex algorithms in the C programming language.
+- Design and implement a parallelisation strategy that leverages GPU hardware.
+- Leveraging low-level asynchronous interactions between the host and device with the CUDA runtime API.
+- Assess the quality of a stochastic and deterministic methods.
+
+### Visualization
+
+To visualize the price surface plot, you first need to run:
+```
+#Run the compilation routine
+make
+
+# Run Monte-Carlo algorithm
+./MC 3 <filename.txt>
+```
+
+You should see a text file appearing in the working directory. Eventually, run with your Python interpreter
+```
+python plot.py <filename.txt>
+```
+
+to plot a surface of the option price against its two conditioning parameters. You can tune the time instant with the vertical slider on the left.
+
+### Algorithms
+
+Two numerical solutions are proposed:
+
+- Monte-Carlo algorithm. The device grid parallelises a large number of asset price trajectories and combines them to provide an option price Monte-Carlo estimator.
+
+- The finite-difference scheme. The Black-Scholes partial differential equation (i.e. a backward Fokker–Planck equation) is solved using a Crank–Nicolson finite-difference scheme that leverages the Parallel Cyclic Reduction algorithm for efficient implementation.
+
+The GPU timer, more precise and trustworthy than the CPU timer, measures the execution time. Both yield a solution within a comparable time frame of around a second.
+
 ## Labs
 
 - Lab1: *Device Query*. This lab teaches how to query the device to get the piece of information you need on your GPU.
@@ -15,39 +54,27 @@ This repository stores all the labs completed of the course [Massive Parallel Co
     * Implicit Euler scheme with Thomas' method to solve the tridiagonal system. Despite simple, the main bottleneck is that it cannot be efficiently parallelised on GPUs.
     * Crank-Nicolson scheme, aka semi-implicit semi-explicit for better stability properties. Parallel-Cyclic Reduction algorithm is implemented to solve the resulting tridiagonal system. Although this algorithm is more complex, it lends itself much more naturally to parallelisation on GPU grids.
 
-
-## Project *PDE Simulation of Bullet Option*
-
-The project aims to utilise the parallelisation capabilities of GPUs for pricing bullet options, which are exotic, path-dependent contracts.
-
-Two numerical solutions are proposed:
-
-- Monte-Carlo algorithm. The device grid parallelises a large number of asset price trajectories and combines them to provide an option price Monte-Carlo estimator.
-- The finite-difference scheme. The Black-Scholes partial differential equation (i.e. a backward Fokker–Planck equation) is solved using a Crank–Nicolson finite-difference scheme that leverages the Parallel Cyclic Reduction algorithm.
-
-Both yield a solution within a comparable time frame of around a second.
-
 ### Repository structure
 
 ```
 .
 ├── Labs
 │   ├── Lab1
-│   │   ├── DevQuery.cu
+│   │   ├── DevQuery.cu                         # Query your device
 │   │   └── Device_Query_Lab.ipynb
 │   ├── Lab2
-│   │   ├── HW_built_Lab.ipynb
+│   │   ├── HW_built_Lab.ipynb                  # Your first 'Hello World!' in CUDA
 │   │   └── HWbuilt.cu
 │   ├── Lab3
-│   │   ├── Add_timer_cpu.cu
-│   │   ├── Add_timer_gpu.cu
+│   │   ├── Add_timer_cpu.cu                    # Time your algorithms with the host clock
+│   │   ├── Add_timer_gpu.cu                    # Time your algorithms with the device clock
 │   │   ├── Array_Add_Lab.ipynb
-│   │   └── timer.h
+│   │   └── timer.h                             # Header of the timer library
 │   ├── Lab4
-│   │   ├── MC.cu
+│   │   ├── MC.cu                               # Monte-Carlo algorithm
 │   │   ├── MC2.cu
 │   │   ├── MC_Lab.ipynb
-│   │   ├── NMC.cu
+│   │   ├── NMC.cu                              # Nested Monte-Carlo
 │   │   └── NMC_Lab.ipynb
 │   └── Lab5
 │       ├── Crank_Lab.ipynb
@@ -61,11 +88,11 @@ Both yield a solution within a comparable time frame of around a second.
 ├── PDE-simulation-of-bullet-option
 │   ├── HPC_GPU.pdf
 │   ├── Makefile                            # Compilation routine
-│   ├── include
+│   ├── include                             # Headers
 │   │   ├── MC.cuh
 │   │   ├── utils.cuh
 │   │   └── wrappers.cuh
-│   ├── plot.py
+│   ├── plot.py                             # Routile to plot option price surface against S_Ti and I_Ti with a slider tuning Ti
 │   └── src
 │       ├── MC.cu                           # algorithms for sampling to estimate the option price
 │       ├── PDE_full.cu                     # Solve the Black-Scholes equation over the whole interval [0, T]
