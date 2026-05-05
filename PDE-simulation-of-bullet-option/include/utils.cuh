@@ -13,6 +13,8 @@ typedef struct {
 
 float mean(float* array, int length);
 
+float std_(float* array, int length);
+
 // Function that catches errors
 void testCUDA(cudaError_t error, const char *file, int line);
 

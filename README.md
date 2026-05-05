@@ -1,6 +1,8 @@
 # Massive Parallel Computing with GPUs
 
-This repository stores all the labs completed of the course [Massive Parallel Computing with GPUs](https://finance.math.upmc.fr/enseignements/2_mn_4_massive_parallel/) given at Sorbonne University between February and March 2026, as well as the project carried out for validation.
+This project investigates GPU-accelerated stochastic and PDE-based methods for high-dimensional option pricing, focusing on computational trade-offs between Monte Carlo and finite-difference solvers.
+
+This repository follows the course [Massive Parallel Computing with GPUs](https://finance.math.upmc.fr/enseignements/2_mn_4_massive_parallel/) given at Sorbonne University between February and March 2026.
 
 ## Project *PDE Simulation of Bullet Option*
 
@@ -13,9 +15,20 @@ The project aims to utilise **the parallelisation capabilities of GPUs to price 
 - Leveraging low-level asynchronous interactions between the host and device with the CUDA runtime API.
 - Assess the quality of a stochastic and deterministic methods.
 
+### Algorithms
+
+Two numerical solutions are proposed:
+
+- Monte-Carlo algorithm. The device grid parallelises a large number of asset price trajectories and combines them to provide an option price Monte-Carlo estimator.
+
+- The finite-difference scheme. The Black-Scholes partial differential equation (i.e. a backward Fokker–Planck equation) is solved using a Crank–Nicolson finite-difference scheme that leverages the Parallel Cyclic Reduction algorithm for efficient implementation.
+
+The GPU timer, more precise and trustworthy than the CPU timer, measures the execution time. Both yield a solution within a comparable time frame of around a second.
+
+
 ### Visualization
 
-To visualize the price surface plot, you first need to run:
+To visualize the price surface plot computed with Monte-Carlo method, you first need to run:
 ```
 #Run the compilation routine
 make
@@ -31,17 +44,39 @@ python plot.py <filename.txt>
 
 to plot a surface of the option price against its two conditioning parameters. You can tune the time instant with the vertical slider on the left.
 
-### Algorithms
+![3D plot]("./PDE-simulation-of-bullet-option/img/illustration.png")
 
-Two numerical solutions are proposed:
+### Speed-up
 
-- Monte-Carlo algorithm. The device grid parallelises a large number of asset price trajectories and combines them to provide an option price Monte-Carlo estimator.
+The table below compares the running times of the PDE- and Monte Carlo-based approaches for different parameter values. Interestingly, a warm-up effect appears to occur. Running a kernel $n$ times within a loop is faster than running the program from start $n$ times.
 
-- The finite-difference scheme. The Black-Scholes partial differential equation (i.e. a backward Fokker–Planck equation) is solved using a Crank–Nicolson finite-difference scheme that leverages the Parallel Cyclic Reduction algorithm for efficient implementation.
+#### Monte-Carlo
 
-The GPU timer, more precise and trustworthy than the CPU timer, measures the execution time. Both yield a solution within a comparable time frame of around a second.
+| $T_i$     | No reduction  |  Reduction w/ registers | Reduction w/ shared memory |
+| :---        |    :----:   |          ---: |          ---: |
+| 0.01   | 0.0014 ± 0.0445 | 0.0014 ± 0.0430| 0.0013 ± 0.0412|
+| 0.30   | 0.0015 ± 0.0460 | 0.0014 ± 0.0429| 0.0014 ± 0.0441|
+| 0.60   | 0.0014 ± 0.0449 | 0.0013 ± 0.0418| 0.0013 ± 0.0418|
+| 0.90   | 0.0014 ± 0.0443 | 0.0013 ± 0.0425| 0.0013 ± 0.0417|
+| 1.0   | 0.0014 ± 0.0437 | 0.0014 ± 0.0447| 0.0013 ± 0.0426|
+This table displays execution times to estimate a single $F$ with the Monte-Carlo algorithm.
+$128$ blocks and $512$ threads per block execute the calculations in parallel.
+
+#### Finite difference
+The finite difference schema splits the time interval $[0, 1]$ into $N_t$ points.
+
+| $N_t$     | ms  |
+| :---        |    :----:   |
+| 0.01   | 0.56 |
+| 0.30   | 1.22 |
+| 0.60   | 1.57 |
+| 0.90   | 6.02 |
+| 1.0   | 12.26 |
+This table shows how long it takes to compute the evolution of $F$ during a single step with a finite difference schema.
+$128$ blocks and $512$ threads per block execute the calculations in parallel.
 
 ## Labs
+The course involves a number of labs that students can attend to put into practice the ideas that have been talked about in class.
 
 - Lab1: *Device Query*. This lab teaches how to query the device to get the piece of information you need on your GPU.
 - Lab2: *Hello World!* This lab is your first step in the world of CUDA programming. Say your very first words through your device's processor.

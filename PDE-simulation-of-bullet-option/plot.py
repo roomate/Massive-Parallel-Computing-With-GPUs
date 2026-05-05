@@ -2,6 +2,7 @@
 
 import pandas as pd
 import numpy as np
+import sys
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
@@ -10,7 +11,8 @@ M=100
 def find_index(L, val):
     return np.argmin(np.abs(L - val))
 
-file=open("option_price.txt", "r")
+
+file=open(sys.argv[1], "r")
 header=file.readline().strip()
 header=header.split(" ")
 

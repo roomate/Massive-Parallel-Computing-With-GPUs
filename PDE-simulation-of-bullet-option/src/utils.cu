@@ -2,6 +2,7 @@
 #include "utils.cuh"
 #include <curand_kernel.h>
 #include <assert.h>
+#include <math.h>
 
 float mean(float* array, int length)
 {
@@ -10,6 +11,14 @@ float mean(float* array, int length)
     return sum/length;
 }
 
+float std_(float* array, int length)
+{
+  float mean_=mean(array, length);
+  float sum=0;
+  for (int i=0; i<length; ++i) {sum+=(array[i]-mean_)*(array[i]-mean_);}
+  return sqrt(sum/length);
+
+}
 
 void testCUDA(cudaError_t error, const char *file, int line)  {
 

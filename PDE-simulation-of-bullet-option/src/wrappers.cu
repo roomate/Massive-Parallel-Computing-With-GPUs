@@ -6,7 +6,7 @@
 
 #define testCUDA(error) (testCUDA(error, __FILE__, __LINE__));
 
-void wrapper_1(float x, int i, int j, float T, float r, float sigma, float K, float B, float P1, float P2)
+float wrapper_1(float x, int i, int j, float T, float r, float sigma, float K, float B, float P1, float P2, bool verbose)
 {
     /*Simulation variables*/
     float *PayGPU, *PayCPU;
@@ -18,16 +18,18 @@ void wrapper_1(float x, int i, int j, float T, float r, float sigma, float K, fl
     unsigned int M=100; //Number of time steps
     float dt=sqrtf(T/(M+1)); //IMPORTANT: It is the square root of the simulation's step size.
 
-    printf("The interval [0, %.1f] is divided into %i sub-intervals, with steps of size %.3f \n", T, M+1, dt*dt);
+    if (verbose){
+      printf("The interval [0, %.1f] is divided into %i sub-intervals, with steps of size %.3f \n", T, M+1, dt*dt);
+    }
 
     assert (x>=0);
     assert (j<=i);
 
     float TimeExec;
   	cudaEvent_t start, stop;						// GPU timer instructions
-	  testCUDA(cudaEventCreate(&start));				// GPU timer instructions
-	  testCUDA(cudaEventCreate(&stop));				// GPU timer instructions
-	  testCUDA(cudaEventRecord(start,0));				// GPU timer instructions
+	  testCUDA(cudaEventCreate(&start));	// GPU timer instructions
+	  testCUDA(cudaEventCreate(&stop));		// GPU timer instructions
+	  testCUDA(cudaEventRecord(start,0));	// GPU timer instructions
 
 
     /*Allocate memory on host*/
@@ -52,15 +54,18 @@ void wrapper_1(float x, int i, int j, float T, float r, float sigma, float K, fl
 	  testCUDA(cudaEventDestroy(start));				// GPU timer instructions
 	  testCUDA(cudaEventDestroy(stop));				// GPU timer instructions
 
-	  printf("GPU time execution for MC_k1 is: %f ms\n", TimeExec);
-
-    printf("F(%i, %i, %i)=%f\n", i, (int)x, j, mean(PayCPU, Nb_sim));
+    if (verbose){
+	    printf("GPU time execution for MC_k1 is: %.3f ms\n", TimeExec);
+      printf("F(%i, %.3f, %i)=%.3f\n", i, x, j, mean(PayCPU, Nb_sim));
+    }
+  
     testCUDA(cudaFree(PayGPU));
     testCUDA(cudaFree(states));
     free(PayCPU);
+    return TimeExec;
 }
 
-void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, float B, float P1, float P2)
+float wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, float B, float P1, float P2, bool verbose)
 {
     /*Simulation variables*/
     float *PayGPU, *PayCPU;
@@ -72,8 +77,9 @@ void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, fl
     unsigned int M=100; //Number of time steps
     float dt=sqrtf(T/(M+1)); //IMPORTANT: It is the square root of the simulation's step size.
 
-    printf("The interval [0, %.1f] is divided into %i sub-intervals, with steps of size %.3f \n", T, M+1, dt*dt);
-
+    if (verbose){
+      printf("The interval [0, %.1f] is divided into %i sub-intervals, with steps of size %.3f \n", T, M+1, dt*dt);
+    }
     assert (x>=0);
     assert (j<=i);
 
@@ -88,7 +94,7 @@ void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, fl
     if (PayCPU==nullptr) {printf("Error, unable to allocate memory."); exit(EXIT_FAILURE);}
 
     /*To store the option price on GPU.*/
-	testCUDA(cudaMalloc(&PayGPU, sizeof(float)));
+	  testCUDA(cudaMalloc(&PayGPU, sizeof(float)));
     /*In default stream, kernel launches are serialized.*/
     testCUDA(cudaMemset(PayGPU, 0, sizeof(float)));
 
@@ -98,8 +104,8 @@ void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, fl
     init_curand_state_k <<<NB, NTPB>>> (states, 0);
 
 
-    // MC_k2<<<NB, NTPB, NTPB*sizeof(float)>>>(x, r, sigma, dt, K, B, P1, P2, M, i, j, states, PayGPU);
-    MC_k3<<<NB, NTPB, NTPB*sizeof(float)>>>(x, r, sigma, dt, K, B, P1, P2, M, i, j, states, PayGPU);
+    MC_k2<<<NB, NTPB, NTPB*sizeof(float)>>>(x, r, sigma, dt, K, B, P1, P2, M, i, j, states, PayGPU);
+    // MC_k3<<<NB, NTPB, NTPB*sizeof(float)>>>(x, r, sigma, dt, K, B, P1, P2, M, i, j, states, PayGPU);
     testCUDA(cudaMemcpy(PayCPU, PayGPU, sizeof(float), cudaMemcpyDeviceToHost));
 
     testCUDA(cudaEventRecord(stop,0));				// GPU timer instructions
@@ -109,15 +115,20 @@ void wrapper_2(float x, int i, int j, float T, float r, float sigma, float K, fl
 	  testCUDA(cudaEventDestroy(start));				// GPU timer instructions
 	  testCUDA(cudaEventDestroy(stop));				// GPU timer instructions
 
-	  printf("GPU time execution for MC_k3 is: %f ms\n", TimeExec);
-    printf("F(%i, %i, %i)=%f\n", i, (int)x, j, *PayCPU/Nb_sim);
+    float MC_mean=*PayCPU/Nb_sim;
+
+    if (verbose){
+      printf("GPU time execution for MC_k3 is: %.3f ms.\n", TimeExec);
+      printf("F(%i, %.3f, %i)=%.3f\n", i, x, j, MC_mean);
+    }
 
     testCUDA(cudaFree(PayGPU));
     testCUDA(cudaFree(states));
     free(PayCPU);
+    return TimeExec;
 }
 
-void wrapper_3(char filename[], float T, float r, float sigma, float S0, float K, float B, float P1, float P2)
+float wrapper_3(char filename[], float T, float r, float sigma, float S0, float K, float B, float P1, float P2)
 {
 
   //Parameters for numerical parameter
@@ -153,7 +164,7 @@ void wrapper_3(char filename[], float T, float r, float sigma, float S0, float K
 
   /*Allocate memory on host*/
   PayCPU=(Option_price*)malloc(Nb_sim * sizeof(Option_price));
-  if (PayCPU==nullptr) {printf("Error, unable to allocate memory."); exit(EXIT_FAILURE);}
+  if (PayCPU==nullptr) {printf("Error, unable to allocate memory.\n"); exit(EXIT_FAILURE);}
 
   /*To store the option price on device.*/
   testCUDA(cudaMalloc(&PayGPU, Nb_sim * sizeof(Option_price)));
@@ -181,7 +192,7 @@ void wrapper_3(char filename[], float T, float r, float sigma, float S0, float K
   testCUDA(cudaEventDestroy(start));				// GPU timer instructions
   testCUDA(cudaEventDestroy(stop));				// GPU timer instructions
 
-  printf("GPU time execution for MC_k4 is: %f ms\n", TimeExec);
+  printf("GPU time execution for MC_k4 is: %.3f ms\n", TimeExec);
 
 
   /*Free memory*/
@@ -189,10 +200,13 @@ void wrapper_3(char filename[], float T, float r, float sigma, float S0, float K
   testCUDA(cudaFree(states));
   testCUDA(cudaFree(states_MC));
 
-  /*Write data in a text file.*/
-  write_data(filename, PayCPU, Nb_sim);
+  if (filename!=nullptr){
+    /*Write data in a text file.*/
+    write_data(filename, PayCPU, Nb_sim);
+  }
 
   free(PayCPU);
+  return TimeExec;
 }
 
 void wrapper_trash(float T, float r, float sigma, float S0, float K, float B, float P1, float P2)
