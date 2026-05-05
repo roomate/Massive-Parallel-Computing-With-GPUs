@@ -44,7 +44,7 @@ python plot.py <filename.txt>
 
 to plot a surface of the option price against its two conditioning parameters. You can tune the time instant with the vertical slider on the left.
 
-![3D plot]("./PDE-simulation-of-bullet-option/img/illustration.png")
+![3D plot](.\PDE-simulation-of-bullet-option\img\illustration.png)
 
 ### Speed-up
 
@@ -59,6 +59,7 @@ The table below compares the running times of the PDE- and Monte Carlo-based app
 | 0.60   | 0.0014 ± 0.0449 | 0.0013 ± 0.0418| 0.0013 ± 0.0418|
 | 0.90   | 0.0014 ± 0.0443 | 0.0013 ± 0.0425| 0.0013 ± 0.0417|
 | 1.0   | 0.0014 ± 0.0437 | 0.0014 ± 0.0447| 0.0013 ± 0.0426|
+
 This table displays execution times to estimate a single $F$ with the Monte-Carlo algorithm.
 $128$ blocks and $512$ threads per block execute the calculations in parallel.
 
@@ -72,6 +73,7 @@ The finite difference schema splits the time interval $[0, 1]$ into $N_t$ points
 | 0.60   | 1.57 |
 | 0.90   | 6.02 |
 | 1.0   | 12.26 |
+
 This table shows how long it takes to compute the evolution of $F$ during a single step with a finite difference schema.
 $128$ blocks and $512$ threads per block execute the calculations in parallel.
 
