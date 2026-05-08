@@ -53,15 +53,40 @@ The table below compares the running times of the PDE- and Monte Carlo-based app
 #### Monte-Carlo
 
 | $T_i$     | No reduction  |  Reduction w/ registers | Reduction w/ shared memory |
-| :---        |    :----:   |          ---: |          ---: |
+| :---        |    :----:   |          :---: |          ---: |
 | 0.01   | 0.0014 ± 0.0445 | 0.0014 ± 0.0430| 0.0013 ± 0.0412|
 | 0.30   | 0.0015 ± 0.0460 | 0.0014 ± 0.0429| 0.0014 ± 0.0441|
 | 0.60   | 0.0014 ± 0.0449 | 0.0013 ± 0.0418| 0.0013 ± 0.0418|
 | 0.90   | 0.0014 ± 0.0443 | 0.0013 ± 0.0425| 0.0013 ± 0.0417|
 | 1.0   | 0.0014 ± 0.0437 | 0.0014 ± 0.0447| 0.0013 ± 0.0426|
 
-This table displays execution times to estimate a single $F$ with the Monte-Carlo algorithm.
+This table shows the execution times for estimating a single scalar $F(T_i, x, j)$ using the Monte-Carlo method. Three variants are compared: no reduction (`MC_k1`), thread reduction with shared memory (`MC_k2`)and thread reduction with registers (`MC_k3`).
 $128$ blocks and $512$ threads per block execute the calculations in parallel.
+
+We solve the PDE over the grid using routine `MC_k4`. The threads are reduced on registers, and each grid node uses $512 \times W$ threads, where $W=128$ and $W=256$ on the left and right table, respectively.
+
+<table>
+<tr><td>
+
+|N | Execution time (ms)|
+|--|--|
+|128| 2797|
+|256| 5596|
+|512| 10668|
+|1024| 21463|
+
+</td><td>
+
+|N | Execution time (ms)|
+|--|--|
+|128| 5533|
+|256| 11097|
+|512| 22781|
+|1024| 48128|
+
+</td></tr> </table>
+
+The parameter $N$ tunes the coarseness of the grid. There is a clear linear relationship between the computational load and the execution time.
 
 #### Finite difference
 The finite difference schema splits the time interval $[0, 1]$ into $N_t$ points.
@@ -74,7 +99,7 @@ The finite difference schema splits the time interval $[0, 1]$ into $N_t$ points
 | 0.90   | 6.02 |
 | 1.0   | 12.26 |
 
-This table shows how long it takes to compute the evolution of $F$ during a single time step with a finite difference schema.
+This table shows the execution time to compute the evolution of $F$ during a single time step with a finite difference schema.
 $128$ blocks and $512$ threads per block execute the calculations in parallel.
 
 ## Labs
