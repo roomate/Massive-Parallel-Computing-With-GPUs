@@ -44,7 +44,7 @@ python plot.py <filename.txt>
 
 to plot a surface of the option price against its two conditioning parameters. You can tune the time instant with the vertical slider on the left.
 
-![3D plot](.\PDE-simulation-of-bullet-option\img\illustration.png)
+![3D plot](./PDE-simulation-of-bullet-option/img/illustration.png)
 
 ### Speed-up
 
@@ -74,7 +74,7 @@ The finite difference schema splits the time interval $[0, 1]$ into $N_t$ points
 | 0.90   | 6.02 |
 | 1.0   | 12.26 |
 
-This table shows how long it takes to compute the evolution of $F$ during a single step with a finite difference schema.
+This table shows how long it takes to compute the evolution of $F$ during a single time step with a finite difference schema.
 $128$ blocks and $512$ threads per block execute the calculations in parallel.
 
 ## Labs
