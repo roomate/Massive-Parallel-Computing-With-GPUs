@@ -17,7 +17,7 @@ __global__ void MC_k1(float x, float r, float sigma, float dt, float K, float B,
     j+=(S<=B);
 	}
 
-	PayGPU[idx] = expf(-r * (M-i) * dt * dt) * fmaxf(0.0f, S - K)*(((float)j>=P1) && ((float)j<=P2));
+	PayGPU[idx] = expf(-r * (M-i) * dt * dt) * fmaxf(0.0f, S - K) * (((float)j>=P1) && ((float)j<=P2));
 
   state[idx]=localState;
 }
@@ -40,7 +40,7 @@ __global__ void MC_k2(float x, float r, float sigma, float dt, float K, float B,
     j+=(S<=B);
   }
 
-  tmp[threadIdx.x] = expf(-r * (M-i) * dt * dt) * fmaxf(0.0f, S - K)*(((float)j>=P1) && ((float)j<=P2));
+  tmp[threadIdx.x] = expf(-r * (M-i) * dt * dt) * fmaxf(0.0f, S - K) * (((float)j>=P1) && ((float)j<=P2));
 
   /*Block-level synchronization barrier.*/
   __syncthreads();
@@ -83,7 +83,7 @@ __global__ void MC_k3(float x, float r, float sigma, float dt, float K, float B,
     j+=(S<=B);
   }
 
-  loc_warp = expf(-r * (M-i) * dt * dt) * fmaxf(0.0f, S - K)*(((float)j>=P1) && ((float)j<=P2));
+  loc_warp = expf(-r * (M-i) * dt * dt) * fmaxf(0.0f, S - K) * (((float)j>=P1) && ((float)j<=P2));
 
   /*Threads Reduction on lane to compute the sum*/
   int counter = 16; /*blockDim.x=m, it is a decreasing counter.*/
