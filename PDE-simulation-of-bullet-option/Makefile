@@ -24,8 +24,7 @@ clean:
 
 # Nettoyage complet (fichiers objets et exécutable)
 fclean: clean
-	@echo "Hello There"
-	rm -f $(TARGET)
+:x
 
 # Refaire la compilation
 re: fclean all
